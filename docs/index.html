@@ -1,0 +1,279 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Job Hunt Portal</title>
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>💼</text></svg>">
+<style>
+  :root {
+    --bg: #f6f7f9; --surface: #ffffff; --surface-2: #f0f2f5; --border: #e2e5ea;
+    --text: #15181d; --muted: #646b76; --accent: #2f5bea; --accent-soft: #e8eefe;
+    --good: #12805c; --good-soft: #e3f5ee; --ok: #a86a00; --ok-soft: #fdf2dc;
+    --bad: #b4373b; --bad-soft: #fbe7e7; --shadow: 0 1px 2px rgba(16,24,40,.06);
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #0f1115; --surface: #171a20; --surface-2: #1e222a; --border: #2a2f39;
+      --text: #e8eaee; --muted: #9aa2ae; --accent: #7c9cff; --accent-soft: #1d2747;
+      --good: #4cc79a; --good-soft: #12301f; --ok: #f0b54a; --ok-soft: #33270f;
+      --bad: #f07a7e; --bad-soft: #3a1a1c; --shadow: none;
+    }
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--bg); color: var(--text);
+         font: 15px/1.5 -apple-system, BlinkMacSystemFont, "Segoe UI", Inter, Roboto, sans-serif; }
+  .wrap { max-width: 1080px; margin: 0 auto; padding: 24px 16px 64px; }
+  header { display: flex; flex-wrap: wrap; align-items: baseline; justify-content: space-between; gap: 8px; }
+  h1 { margin: 0; font-size: 22px; letter-spacing: -.01em; }
+  .updated { color: var(--muted); font-size: 13px; }
+
+  .stats { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin: 20px 0; }
+  .stat { background: var(--surface); border: 1px solid var(--border); border-radius: 12px;
+          padding: 14px 16px; box-shadow: var(--shadow); }
+  .stat .v { font-size: 26px; font-weight: 650; font-variant-numeric: tabular-nums; }
+  .stat .l { color: var(--muted); font-size: 13px; }
+
+  .tabs { display: flex; gap: 4px; overflow-x: auto; border-bottom: 1px solid var(--border); margin-bottom: 14px; }
+  .tab { background: none; border: 0; color: var(--muted); padding: 8px 12px; font: inherit; cursor: pointer;
+         border-bottom: 2px solid transparent; white-space: nowrap; }
+  .tab.on { color: var(--text); border-color: var(--accent); font-weight: 600; }
+  .tab .n { font-size: 12px; color: var(--muted); margin-left: 4px; }
+
+  .toolbar { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; margin-bottom: 16px; }
+  .toolbar input[type=search], .toolbar select {
+    background: var(--surface); color: var(--text); border: 1px solid var(--border);
+    border-radius: 8px; padding: 8px 10px; font: inherit; }
+  .toolbar input[type=search] { flex: 1 1 220px; min-width: 0; }
+  .range { display: flex; align-items: center; gap: 8px; color: var(--muted); font-size: 13px; }
+  .range b { color: var(--text); min-width: 2.5ch; font-variant-numeric: tabular-nums; }
+
+  .job { background: var(--surface); border: 1px solid var(--border); border-radius: 12px;
+         padding: 14px 16px; margin-bottom: 10px; box-shadow: var(--shadow);
+         display: grid; grid-template-columns: 52px 1fr auto; gap: 14px; align-items: start; }
+  .score { width: 52px; height: 52px; border-radius: 12px; display: grid; place-items: center;
+           font-weight: 700; font-size: 17px; font-variant-numeric: tabular-nums; }
+  .s-good { background: var(--good-soft); color: var(--good); }
+  .s-ok { background: var(--ok-soft); color: var(--ok); }
+  .s-bad { background: var(--bad-soft); color: var(--bad); }
+  .title { font-weight: 600; font-size: 16px; margin: 0 0 2px; cursor: pointer; }
+  .title:hover { color: var(--accent); }
+  .meta { color: var(--muted); font-size: 13px; display: flex; flex-wrap: wrap; gap: 4px 14px; }
+  .chip { display: inline-block; font-size: 12px; padding: 1px 8px; border-radius: 999px;
+          background: var(--surface-2); color: var(--muted); border: 1px solid var(--border); }
+  .chip.big { background: var(--accent-soft); color: var(--accent); border-color: transparent; }
+  .summary { margin: 8px 0 0; font-size: 14px; }
+  .details { display: none; margin-top: 10px; padding-top: 10px; border-top: 1px dashed var(--border); font-size: 14px; }
+  .job.open .details { display: block; }
+  .details ul { margin: 4px 0 8px; padding-left: 18px; }
+  .details h4 { margin: 6px 0 0; font-size: 12px; text-transform: uppercase; letter-spacing: .04em; color: var(--muted); }
+  .actions { display: flex; flex-direction: column; gap: 6px; align-items: stretch; min-width: 120px; }
+  .btn { display: inline-block; text-align: center; text-decoration: none; background: var(--accent); color: #fff;
+         border-radius: 8px; padding: 7px 12px; font-size: 14px; font-weight: 600; border: 0; cursor: pointer; }
+  .dark-btn { background: var(--surface-2); color: var(--text); border: 1px solid var(--border); }
+  .actions select { background: var(--surface); color: var(--text); border: 1px solid var(--border);
+                    border-radius: 8px; padding: 6px 8px; font: inherit; font-size: 14px; }
+  .empty { text-align: center; color: var(--muted); padding: 48px 16px; background: var(--surface);
+           border: 1px dashed var(--border); border-radius: 12px; }
+  footer { margin-top: 24px; color: var(--muted); font-size: 13px; display: flex; flex-wrap: wrap; gap: 10px; align-items: center; }
+  footer button { font-size: 13px; padding: 5px 10px; }
+
+  @media (max-width: 640px) {
+    .stats { grid-template-columns: repeat(2, 1fr); }
+    .job { grid-template-columns: 44px 1fr; }
+    .score { width: 44px; height: 44px; font-size: 15px; }
+    .actions { grid-column: 1 / -1; flex-direction: row; }
+    .actions > * { flex: 1; }
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <h1>💼 Job Hunt Portal</h1>
+    <span class="updated" id="updated">Loading…</span>
+  </header>
+
+  <section class="stats">
+    <div class="stat"><div class="v" id="st-today">–</div><div class="l">Scored in last 24h</div></div>
+    <div class="stat"><div class="v" id="st-match">–</div><div class="l">Matches (alerted)</div></div>
+    <div class="stat"><div class="v" id="st-applied">–</div><div class="l">Applied</div></div>
+    <div class="stat"><div class="v" id="st-interview">–</div><div class="l">Interviews</div></div>
+  </section>
+
+  <nav class="tabs" id="tabs"></nav>
+
+  <div class="toolbar">
+    <input type="search" id="q" placeholder="Search title, company, skills…">
+    <label class="range">Min score <input type="range" id="min" min="0" max="100" step="5"><b id="minv"></b></label>
+    <select id="source"><option value="">All sources</option></select>
+    <select id="sort">
+      <option value="new">Newest first</option>
+      <option value="score">Highest score</option>
+    </select>
+    <label class="range"><input type="checkbox" id="big"> Large companies only</label>
+  </div>
+
+  <main id="list"></main>
+
+  <footer>
+    <span>Statuses are saved in this browser.</span>
+    <button class="btn dark-btn" id="export">Export tracker</button>
+    <button class="btn dark-btn" id="import">Import tracker</button>
+    <input type="file" id="importFile" accept="application/json" hidden>
+  </footer>
+</div>
+
+<script>
+const STATUSES = ["New", "Saved", "Applied", "Interview", "Offer", "Rejected", "Hidden"];
+const TABS = ["Matches", "All", ...STATUSES.slice(1)];
+const store = {
+  get(k, d) { try { return JSON.parse(localStorage.getItem(k)) ?? d; } catch { return d; } },
+  set(k, v) { try { localStorage.setItem(k, JSON.stringify(v)); } catch {} },
+};
+let jobs = [], threshold = 70;
+let tracker = store.get("jh.tracker", {});           // id -> {status, at}
+const ui = Object.assign({ tab: "Matches", q: "", min: 0, source: "", sort: "new", big: false },
+                         store.get("jh.ui", {}));
+
+const $ = (id) => document.getElementById(id);
+const esc = (s) => String(s ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+const statusOf = (j) => tracker[j.id]?.status || "New";
+const scoreClass = (s) => (s >= threshold ? "s-good" : s >= 50 ? "s-ok" : "s-bad");
+
+function ago(ts) {
+  const m = Math.round((Date.now() / 1000 - ts) / 60);
+  if (m < 60) return `${m}m ago`;
+  if (m < 1440) return `${Math.round(m / 60)}h ago`;
+  return `${Math.round(m / 1440)}d ago`;
+}
+
+function inTab(j, tab) {
+  const st = statusOf(j);
+  if (tab === "All") return st !== "Hidden";
+  if (tab === "Matches") return j.alerted && st !== "Hidden" && st !== "Rejected";
+  return st === tab;
+}
+
+function filtered() {
+  const q = ui.q.trim().toLowerCase();
+  let out = jobs.filter((j) => inTab(j, ui.tab)
+    && j.match_score >= ui.min
+    && (!ui.source || j.source === ui.source)
+    && (!ui.big || j.large_stable_company)
+    && (!q || [j.title, j.company, j.location, j.role_focus, j.summary, ...(j.key_matches || [])]
+                .join(" ").toLowerCase().includes(q)));
+  out.sort(ui.sort === "score" ? (a, b) => b.match_score - a.match_score || b.scored_at - a.scored_at
+                               : (a, b) => b.scored_at - a.scored_at);
+  return out;
+}
+
+function renderTabs() {
+  $("tabs").innerHTML = TABS.map((t) =>
+    `<button class="tab ${t === ui.tab ? "on" : ""}" data-tab="${t}">${t}<span class="n">${jobs.filter((j) => inTab(j, t)).length}</span></button>`
+  ).join("");
+}
+
+function renderStats() {
+  const day = Date.now() / 1000 - 86400;
+  $("st-today").textContent = jobs.filter((j) => j.scored_at > day).length;
+  $("st-match").textContent = jobs.filter((j) => j.alerted).length;
+  $("st-applied").textContent = jobs.filter((j) => ["Applied", "Interview", "Offer"].includes(statusOf(j))).length;
+  $("st-interview").textContent = jobs.filter((j) => ["Interview", "Offer"].includes(statusOf(j))).length;
+}
+
+function jobCard(j) {
+  const st = statusOf(j);
+  const list = (items) => (items?.length ? `<ul>${items.map((i) => `<li>${esc(i)}</li>`).join("")}</ul>` : "<p>—</p>");
+  return `<article class="job" data-id="${esc(j.id)}">
+    <div class="score ${scoreClass(j.match_score)}">${j.match_score}</div>
+    <div>
+      <h3 class="title" data-toggle>${esc(j.title)}</h3>
+      <div class="meta">
+        <span>🏢 ${esc(j.company)} ${j.large_stable_company ? '<span class="chip big">Large & stable</span>' : ""}</span>
+        <span>📍 ${esc(j.location)}</span>
+        <span>💰 ${esc(j.salary || `~${j.salary_estimate_lpa} LPA (est.)`)}</span>
+        <span>🕒 found ${ago(j.scored_at)}</span>
+        <span class="chip">${esc(j.source)}</span>
+      </div>
+      <p class="summary">${esc(j.summary)}</p>
+      <div class="details">
+        <h4>Role focus</h4><p>${esc(j.role_focus)} · company size ${esc(j.company_size_estimate)}</p>
+        <h4>Why it matches</h4>${list(j.key_matches)}
+        <h4>Gaps</h4>${list(j.gaps)}
+        ${j.posted ? `<h4>Posted</h4><p>${esc(j.posted)}</p>` : ""}
+      </div>
+    </div>
+    <div class="actions">
+      <a class="btn" href="${esc(j.url)}" target="_blank" rel="noopener">Open job</a>
+      <select data-status aria-label="Status">${STATUSES.map((s) => `<option ${s === st ? "selected" : ""}>${s}</option>`).join("")}</select>
+    </div>
+  </article>`;
+}
+
+function render() {
+  $("min").value = ui.min; $("minv").textContent = ui.min;
+  $("q").value = ui.q; $("source").value = ui.source; $("sort").value = ui.sort; $("big").checked = ui.big;
+  renderTabs(); renderStats();
+  const items = filtered();
+  $("list").innerHTML = items.length ? items.map(jobCard).join("")
+    : `<div class="empty">${jobs.length ? "No jobs match these filters." : "No scored jobs yet — they appear after the next workflow run."}</div>`;
+  store.set("jh.ui", ui);
+}
+
+function setStatus(id, status) {
+  if (status === "New") delete tracker[id]; else tracker[id] = { status, at: Date.now() };
+  store.set("jh.tracker", tracker);
+  render();
+}
+
+// Events
+$("tabs").addEventListener("click", (e) => { const t = e.target.closest("[data-tab]"); if (t) { ui.tab = t.dataset.tab; render(); } });
+$("q").addEventListener("input", (e) => { ui.q = e.target.value; render(); $("q").focus(); });
+$("min").addEventListener("input", (e) => { ui.min = +e.target.value; render(); });
+$("source").addEventListener("change", (e) => { ui.source = e.target.value; render(); });
+$("sort").addEventListener("change", (e) => { ui.sort = e.target.value; render(); });
+$("big").addEventListener("change", (e) => { ui.big = e.target.checked; render(); });
+$("list").addEventListener("click", (e) => {
+  if (e.target.closest("[data-toggle]")) e.target.closest(".job").classList.toggle("open");
+});
+$("list").addEventListener("change", (e) => {
+  if (e.target.matches("[data-status]")) setStatus(e.target.closest(".job").dataset.id, e.target.value);
+});
+$("export").addEventListener("click", () => {
+  const a = document.createElement("a");
+  a.href = URL.createObjectURL(new Blob([JSON.stringify(tracker, null, 1)], { type: "application/json" }));
+  a.download = "job-tracker.json"; a.click();
+});
+$("import").addEventListener("click", () => $("importFile").click());
+$("importFile").addEventListener("change", async (e) => {
+  const f = e.target.files[0]; if (!f) return;
+  try { tracker = { ...tracker, ...JSON.parse(await f.text()) }; store.set("jh.tracker", tracker); render(); }
+  catch { alert("That file isn't a valid tracker export."); }
+});
+
+// Load data: jobs.json next to this page (GitHub Pages), or the repo's raw file when opened locally.
+async function load() {
+  const urls = ["jobs.json", "https://raw.githubusercontent.com/chronos25/Job-Hunt-Agent/main/docs/jobs.json"];
+  for (const url of urls) {
+    try {
+      const r = await fetch(url + "?t=" + Date.now(), { cache: "no-store" });
+      if (!r.ok) continue;
+      const data = await r.json();
+      jobs = data.jobs || [];
+      threshold = data.min_score_to_alert || 70;
+      $("updated").textContent = data.updated_at ? `Updated ${ago(data.updated_at)} · ${jobs.length} jobs` : "";
+      const sources = [...new Set(jobs.map((j) => j.source))].sort();
+      $("source").innerHTML = '<option value="">All sources</option>' + sources.map((s) => `<option>${esc(s)}</option>`).join("");
+      render();
+      return;
+    } catch {}
+  }
+  $("updated").textContent = "Couldn't load jobs.json";
+  render();
+}
+load();
+setInterval(load, 5 * 60 * 1000);
+</script>
+</body>
+</html>

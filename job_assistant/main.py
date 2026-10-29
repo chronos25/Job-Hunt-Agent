@@ -13,7 +13,7 @@ import yaml
 from . import notifier
 from .filters import reject_reason
 from .sources import fetch_all
-from .store import SeenStore
+from .store import JobLog, SeenStore
 
 log = logging.getLogger("job_assistant")
 
@@ -28,6 +28,7 @@ def main() -> None:
 
     cfg = yaml.safe_load(open(args.config))
     store = SeenStore()
+    job_log = JobLog()
 
     fetched = fetch_all(cfg)
     candidates, batch_keys = [], set()
@@ -60,13 +61,16 @@ def main() -> None:
             result = scorer.score(job)
             if result is None:
                 continue  # leave unseen so the next run retries it
-        if scorer is None or result["match_score"] >= scfg["min_score_to_alert"]:
+        is_match = scorer is None or result["match_score"] >= scfg["min_score_to_alert"]
+        if is_match:
             if not notifier.send(notifier.format_alert(job, result)):
                 continue  # retry next run
             alerted += 1
         else:
             low.append(f"{result['match_score']}% {job.title} @ {job.company}")
         store.add(job)
+        if scorer is not None:
+            job_log.add(job, result, alerted=is_match)
 
     if low and cfg.get("alerts", {}).get("send_rejected_summary"):
         notifier.send("🗂 Low matches skipped:\n" + "\n".join(low))
@@ -74,6 +78,7 @@ def main() -> None:
 
     if not args.dry_run:
         store.save()
+        job_log.save(scfg["min_score_to_alert"])
 
 
 if __name__ == "__main__":
